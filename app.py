@@ -97,20 +97,47 @@ def tobs():
 
     return jsonify(temps=temps)
 
-@app.route("/api/v1.0/start")
-@app.route("api/v1.0/start/end")
-def start():
+@app.route("/api/v1.0/temp/<start>")
+def start(start):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+    #Query TMIN, TAVG, TMAX for dates greater than start when no end date is given
+    results = session.query(func.min(Measurement.tobs),\
+                func.max(Measurement.tobs),\
+                func.avg(Measurement.tobs)).\
+            filter(Measurement.date>start).all()
+
+    # convert array into normal list
+    temps = list(np.ravel(results))
+
+    session.close()
+
+    return jsonify(temps=temps)
+
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start, end):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-#   Return a JSON list of the minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
+    #Query TMIN, TAVG, TMAX for dates greater than start when no end date is given
+    results = session.query(func.min(Measurement.tobs),\
+                            func.max(Measurement.tobs),\
+                            func.avg(Measurement.tobs)).\
+                        filter(Measurement.date>=start).\
+                        filter(Measurement.date<=end).all()
+    
+    # convert array into normal list
+    temps = list(np.ravel(results))
 
-#   * When given the start only, calculate `TMIN`, `TAVG`, and `TMAX` for all dates greater than and equal to the start date.
+    session.close()
 
-#   * When given the start and the end date, calculate the `TMIN`, `TAVG`, and `TMAX` for dates between the start and end date inclusive.
+    return jsonify(temps=temps)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
 
 
 
